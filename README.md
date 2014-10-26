@@ -1,5 +1,5 @@
-Predicate - check if country has a capital city defined
-Predicates.and
++Predicate - check if country has a capital city defined
++Predicates.and
 Predicates.containsPattern ??
 CharMatcher - one example
 Joiner.skipNulls()
