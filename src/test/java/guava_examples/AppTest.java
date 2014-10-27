@@ -1,12 +1,15 @@
 package guava_examples;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.base.Strings;
+import com.google.common.base.*;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.sun.istack.internal.Nullable;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,7 +31,7 @@ public class AppTest
 	}
 
 	@Test
-	public void predicateTest_1(){
+	public void predicateTest(){
 		Predicate<Country> countryHasCapitalPredicate = new Predicate<Country>() {
 			@Override
 			public boolean apply(Country country) {
@@ -39,13 +42,13 @@ public class AppTest
 		boolean countriesHaveCapitals = Iterables.all(
 				Lists.newArrayList(poland, england, unknown),
 				countryHasCapitalPredicate
-		);
+		); // any(), getFirst(), getLast(), partition()
 
 		assertThat(countriesHaveCapitals, is(false));
 	}
 
 	@Test
-	public void predicateTest_2(){
+	public void predicateComposingTest(){
 		Predicate<Country> countryHasCapitalPredicate = new Predicate<Country>() {
 			@Override
 			public boolean apply(Country country) {
@@ -65,6 +68,77 @@ public class AppTest
 				Predicates.and(countryHasCapitalPredicate, countryCapitalIsLondon)
 		);
 
+		Collection<Country> filteredCollection = Collections2.filter(
+				Lists.newArrayList(poland, england, unknown),
+				Predicates.and(countryHasCapitalPredicate, countryCapitalIsLondon)
+		);
+
 		assertThat(filteredList, hasItems(england));
+		assertThat(filteredCollection, hasItems(england));
+	}
+
+	@Test
+	public void functionsAndTransformTest(){
+		Function<Country, String> countryToCapital = new Function<Country, String>() {
+
+			@Override
+			public String apply(@Nullable Country country) {
+				if (country == null){
+					return "";
+				}
+				return country.getCapital();
+			}
+		};
+
+		Collection<String> capitalsCollection = Collections2.transform(Lists.newArrayList(poland, england, germany), countryToCapital);
+
+		assertThat(capitalsCollection, hasItems("Warsaw", "London", "Berlin"));
+	}
+
+	@Test
+	public void functionsAndTransformComposingTest(){
+		Function<Country, String> countryToCapital = new Function<Country, String>() {
+
+			@Override
+			public String apply(@Nullable Country country) {
+				if (country == null){
+					return "";
+				}
+				return country.getCapital();
+			}
+		};
+
+		Function<String, String> capitalToUpperCase = new Function<String, String>() {
+
+			@Override
+			public String apply(String capital) {
+				return capital.toUpperCase();
+			}
+		};
+
+		Function<Country, String> composedFunctions = Functions.compose(capitalToUpperCase, countryToCapital);
+
+		Collection<String> capitalsCollection = Collections2.transform(Lists.newArrayList(poland, england, germany), composedFunctions);
+
+		assertThat(capitalsCollection, hasItems("WARSAW", "LONDON", "BERLIN"));
+	}
+
+	@Test
+	public void joinerTest(){
+		List<String> capitals = Lists.newArrayList(germany.getCapital(), poland.getCapital(), england.getCapital(), null);
+
+		String listOfCapitals = Joiner.on(',').skipNulls().join(capitals);
+
+		assertThat(listOfCapitals, is("Berlin,Warsaw,London"));
+	}
+
+	@Test
+	public void splitterTest(){
+		String listOfCapitals = "Berlin,Warsaw,London";
+
+		List<String> capitals = Splitter.on(',').splitToList(listOfCapitals);
+
+		assertThat(capitals.size(), is(3));
+		assertThat(capitals, hasItems("London"));
 	}
 }
